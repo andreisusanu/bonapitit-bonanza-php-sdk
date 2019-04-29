@@ -8,40 +8,33 @@ use JMS\Serializer\Annotation as Serializer;
 use Shoplo\BonanzaApi\Type\PaginationInputType;
 use Shoplo\BonanzaApi\Type\RequesterCredentialsType;
 
-class GetOrdersRequest
+class GetOrdersRequest extends SecureRequest
 {
-	/**
-	 * @var RequesterCredentialsType
-	 *
-	 * @Serializer\Type("Shoplo\BonanzaApi\Type\RequesterCredentialsType")
-	 */
-	public $requesterCredentials;
-
 	/**
 	 * @var \DateTime
 	 *
-	 * @Serializer\Type("DateTime<'Y-m-d\TH:i:s.u\Z'>")
+	 * @Serializer\Type("DateTime")
 	 */
 	public $createTimeFrom;
 
 	/**
 	 * @var \DateTime
 	 *
-	 * @Serializer\Type("DateTime<'Y-m-d\TH:i:s.u\Z'>")
+	 * @Serializer\Type("DateTime")
 	 */
 	public $createTimeTo;
 
 	/**
 	 * @var \DateTime
 	 *
-	 * @Serializer\Type("DateTime<'Y-m-d\TH:i:s.u\Z'>")
+	 * @Serializer\Type("DateTime")
 	 */
 	public $modTimeFrom;
 
 	/**
 	 * @var \DateTime
 	 *
-	 * @Serializer\Type("DateTime<'Y-m-d\TH:i:s.u\Z'>")
+	 * @Serializer\Type("DateTime")
 	 */
 	public $modTimeTo;
 
@@ -73,14 +66,14 @@ class GetOrdersRequest
 	/**
 	 * @var \DateTime
 	 *
-	 * @Serializer\Type("DateTime<'Y-m-d\TH:i:s.u\Z'>")
+	 * @Serializer\Type("DateTime")
 	 */
 	public $soldTimeFrom;
 
 	/**
 	 * @var \DateTime
 	 *
-	 * @Serializer\Type("DateTime<'Y-m-d\TH:i:s.u\Z'>")
+	 * @Serializer\Type("DateTime")
 	 */
 	public $soldTimeTo;
 

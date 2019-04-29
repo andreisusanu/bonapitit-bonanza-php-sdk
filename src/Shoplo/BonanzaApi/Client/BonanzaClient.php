@@ -6,6 +6,7 @@ namespace Shoplo\BonanzaApi\Client;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\HandlerStack;
+use JMS\Serializer\JsonSerializationVisitor;
 use JMS\Serializer\Naming\IdenticalPropertyNamingStrategy;
 use JMS\Serializer\Naming\SerializedNameAnnotationStrategy;
 use JMS\Serializer\SerializationContext;
@@ -16,8 +17,10 @@ use Shoplo\BonanzaApi\Credentials\CredentialsInterface;
 use Shoplo\BonanzaApi\Exception\SecureRequestException;
 use Shoplo\BonanzaApi\Request\AddFixedPriceItemRequest;
 use Shoplo\BonanzaApi\Request\AddMultipleFixedPriceItemsRequest;
+use Shoplo\BonanzaApi\Request\CompleteSaleRequest;
 use Shoplo\BonanzaApi\Request\EndFixedPriceItemRequest;
 use Shoplo\BonanzaApi\Request\FetchTokenRequest;
+use Shoplo\BonanzaApi\Request\FindItemsByKeywordsRequest;
 use Shoplo\BonanzaApi\Request\GetBoothItemsRequest;
 use Shoplo\BonanzaApi\Request\GetBoothRequest;
 use Shoplo\BonanzaApi\Request\GetCategoriesRequest;
@@ -34,8 +37,10 @@ use Shoplo\BonanzaApi\Request\UpdateBoothRequest;
 use Shoplo\BonanzaApi\Response\AddFixedPriceItemResponse;
 use Shoplo\BonanzaApi\Response\AddMultipleFixedPriceItemsResponse;
 use Shoplo\BonanzaApi\Response\BaseResponse;
+use Shoplo\BonanzaApi\Response\CompleteSaleResponse;
 use Shoplo\BonanzaApi\Response\EndFixedPriceItemResponse;
 use Shoplo\BonanzaApi\Response\FetchTokenResponse;
+use Shoplo\BonanzaApi\Response\FindItemsByKeywordsResponse;
 use Shoplo\BonanzaApi\Response\GetBoothItemsResponse;
 use Shoplo\BonanzaApi\Response\GetBoothResponse;
 use Shoplo\BonanzaApi\Response\GetCategoriesResponse;
@@ -49,6 +54,7 @@ use Shoplo\BonanzaApi\Response\GetUserResponse;
 use Shoplo\BonanzaApi\Response\ReviseFixedPriceItemResponse;
 use Shoplo\BonanzaApi\Response\SetNotificationPreferencesResponse;
 use Shoplo\BonanzaApi\Response\UpdateBoothResponse;
+use Shoplo\BonanzaApi\Visitors\JsonDeserializationVisitor;
 
 class BonanzaClient
 {
@@ -89,12 +95,20 @@ class BonanzaClient
 	public function __construct(CredentialsInterface $credentials)
 	{
 		$this->credentials = $credentials;
+
+        $propertyNamingStrategy = new SerializedNameAnnotationStrategy(
+            new IdenticalPropertyNamingStrategy()
+        );
+
+        $visitor = new JsonSerializationVisitor($propertyNamingStrategy);
+        $visitor->setOptions(JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP|JSON_UNESCAPED_UNICODE);
+
+        $deserializeVisitor = new JsonDeserializationVisitor($propertyNamingStrategy);
+
 		$this->serializer  = SerializerBuilder::create()
-		                                      ->setPropertyNamingStrategy(
-			                                      new SerializedNameAnnotationStrategy(
-				                                      new IdenticalPropertyNamingStrategy()
-			                                      )
-		                                      )
+		                                      ->setPropertyNamingStrategy($propertyNamingStrategy)
+                                              ->setSerializationVisitor('json', $visitor)
+                                              ->setDeserializationVisitor('json', $deserializeVisitor)
 		                                      ->build();
 
 		$stack = HandlerStack::create();
@@ -102,6 +116,7 @@ class BonanzaClient
 		$stack->push(function (callable $handler) {
 			return function (RequestInterface $request, array $options) use ($handler) {
 				$request = $request->withHeader(self::HEADER_DEV_ID, $this->credentials->getDevId());
+                $request = $request->withHeader('Content-Type', 'application/x-www-form-urlencoded');
 
 				if ($this->credentials->getCertId())
 				{
@@ -131,14 +146,14 @@ class BonanzaClient
 		return $this->post(__FUNCTION__, $request, true);
 	}
 
-	/**
-	 * @param string $function
-	 * @param mixed $data
-	 * @param array $headers
-	 * @param bool $isMultipart
-	 *
-	 * @return mixed
-	 */
+    /**
+     * @param string $function
+     * @param mixed $data
+     * @param bool $isSecure
+     * @param array $headers
+     * @return mixed
+     * @throws SecureRequestException
+     */
 	private function post($function, $data, $isSecure = false, array $headers = []): BaseResponse
 	{
 		if ($isSecure)
@@ -157,7 +172,13 @@ class BonanzaClient
 		$context = new SerializationContext();
 		$context->setSerializeNull(false);
 
-		$data = $this->serializer->serialize($data, 'json', $context);
+        /**
+         * @TODO: revert back to the original serializing method once we remove all the warnings
+         */
+		//$data = $this->serializer->serialize($data, 'json', $context);
+        // workaround for removing nulls
+        $data = $this->walk_recursive_remove(json_decode(json_encode($data), true));
+		$data = urlencode(json_encode($data));
 
 		$rsp = $this->client->request(
 			'POST',
@@ -243,13 +264,42 @@ class BonanzaClient
 		return $this->post(__FUNCTION__, $request, true);
 	}
 
-    public function setNotificationPreferences(SetNotificationPreferencesRequest $request): SetNotificationPreferencesResponse
+	public function setNotificationPreferences(SetNotificationPreferencesRequest $request): SetNotificationPreferencesResponse
+	{
+		return $this->post(__FUNCTION__, $request, true);
+	}
+
+	public function getNotificationPreferences(GetNotificationPreferencesRequest $request): GetNotificationPreferencesResponse
+	{
+		return $this->post(__FUNCTION__, $request, true);
+	}
+
+    public function completeSale(CompleteSaleRequest $request): CompleteSaleResponse
     {
         return $this->post(__FUNCTION__, $request, true);
     }
 
-    public function getNotificationPreferences(GetNotificationPreferencesRequest $request): GetNotificationPreferencesResponse
+    public function findItemsByKeywords(FindItemsByKeywordsRequest $request):FindItemsByKeywordsResponse
     {
         return $this->post(__FUNCTION__, $request, true);
+    }
+
+    /**
+     * @param array $array
+     * @return array
+     */
+    private function walk_recursive_remove (array $array)
+    {
+        foreach ($array as $k => $v) {
+            if (is_array($v)) {
+                $array[$k] = $this->walk_recursive_remove($v);
+            } else {
+                if (null === $v) {
+                    unset($array[$k]);
+                }
+            }
+        }
+
+        return $array;
     }
 }
