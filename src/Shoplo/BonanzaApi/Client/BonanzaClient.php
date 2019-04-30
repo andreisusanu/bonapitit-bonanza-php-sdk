@@ -249,7 +249,7 @@ class BonanzaClient
 		return $this->post(__FUNCTION__, $request, true);
 	}
 
-    public function addMultipleFixedPriceItems(AddMultipleFixedPriceItemsRequest$request): AddMultipleFixedPriceItemsResponse
+    public function addMultipleFixedPriceItems(AddMultipleFixedPriceItemsRequest $request): AddMultipleFixedPriceItemsResponse
     {
         return $this->post(__FUNCTION__, $request, true);
     }

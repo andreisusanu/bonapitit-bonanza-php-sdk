@@ -13,5 +13,5 @@ class AddMultipleItemsType
      *
      * @Serializer\Type("array<Shoplo\BonanzaApi\Type\AddItemType>")
      */
-    public $items;
+    public $item;
 }
