@@ -9,9 +9,9 @@ use JMS\Serializer\Annotation as Serializer;
 class AddMultipleItemsType
 {
     /**
-     * @var AddMultipleItemContainer
+     * @var AddItemType[]
      *
-     * @Serializer\Type("<Shoplo\BonanzaApi\Type\AddMultipleItemContainer>")
+     * @Serializer\Type("array<Shoplo\BonanzaApi\Type\AddItemType>")
      */
-    public $item;
+    public $items;
 }
