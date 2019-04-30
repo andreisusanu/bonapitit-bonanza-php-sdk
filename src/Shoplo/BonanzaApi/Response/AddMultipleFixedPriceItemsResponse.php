@@ -10,9 +10,9 @@ use Shoplo\BonanzaApi\Type\FixedPriceItemResponseType;
 class AddMultipleFixedPriceItemsResponse extends BaseResponse
 {
     /**
-     * @var FixedPriceItemResponseType
+     * @var FixedPriceItemResponseType[]
      *
-     * @Serializer\Type("Shoplo\BonanzaApi\Type\FixedPriceItemResponseType")
+     * @Serializer\Type("array<Shoplo\BonanzaApi\Type\FixedPriceItemResponseType>")
      */
-    public $addFixedPriceItemResponses; // TODO: check this!
+    public $addMultipleFixedPriceItemsResponse;
 }
