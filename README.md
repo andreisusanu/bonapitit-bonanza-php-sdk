@@ -20,6 +20,8 @@ Package currently has got support for calling Bonanza's methods:
 | setNotificationPreferences  | yes |
 | getNotificationPreferences  | yes |
 | completeSale | yes |
+| addMultipleFixedPriceItems | yes |
+| reviseMultipleFixedPriceItems | yes |
 
 Please refer to the Bonanza's API docs here: https://api.bonanza.com/docs
 
